@@ -670,26 +670,38 @@ __host__ cudaError_t CUDARTAPI cudaMemcpy2DArrayToArray(struct cudaArray *dst, s
 }
 
 
-__host__ cudaError_t CUDARTAPI cudaMemcpyToSymbol(const char *symbol, const void *src, size_t count, size_t offset __dv(0), enum cudaMemcpyKind kind __dv(cudaMemcpyHostToDevice))
+__host__ cudaError_t CUDARTAPI cudaMemcpyToSymbolAsync(const char *symbol, const void *src, size_t count, size_t offset, enum cudaMemcpyKind kind, cudaStream_t stream __dv(0))
 {
 	//CUctx_st *context = GPGPUSim_Context();
 	assert(kind == cudaMemcpyHostToDevice);
 	printf("GPGPU-Sim PTX: cudaMemcpyToSymbol: symbol = %p\n", symbol);
 	//stream_operation( const char *symbol, const void *src, size_t count, size_t offset )
-	g_stream_manager->push( stream_operation(src,symbol,count,offset,0) );
+	g_stream_manager->push( stream_operation(src,symbol,count,offset,stream) );
 	//gpgpu_ptx_sim_memcpy_symbol(symbol,src,count,offset,1,context->get_device()->get_gpgpu());
+	return g_last_cudaError = cudaSuccess;
+}
+
+
+__host__ cudaError_t CUDARTAPI cudaMemcpyToSymbol(const char *symbol, const void *src, size_t count, size_t offset __dv(0), enum cudaMemcpyKind kind __dv(cudaMemcpyHostToDevice))
+{
+	return cudaMemcpyToSymbolAsync(symbol, src, count, offset, kind, 0);
+}
+
+
+__host__ cudaError_t CUDARTAPI cudaMemcpyFromSymbolAsync(void *dst, const char *symbol, size_t count, size_t offset, enum cudaMemcpyKind kind, cudaStream_t stream __dv(0))
+{
+	//CUctx_st *context = GPGPUSim_Context();
+	assert(kind == cudaMemcpyDeviceToHost);
+	printf("GPGPU-Sim PTX: cudaMemcpyFromSymbol: symbol = %p\n", symbol);
+	g_stream_manager->push( stream_operation(symbol,dst,count,offset,stream) );
+	//gpgpu_ptx_sim_memcpy_symbol(symbol,dst,count,offset,0,context->get_device()->get_gpgpu());
 	return g_last_cudaError = cudaSuccess;
 }
 
 
 __host__ cudaError_t CUDARTAPI cudaMemcpyFromSymbol(void *dst, const char *symbol, size_t count, size_t offset __dv(0), enum cudaMemcpyKind kind __dv(cudaMemcpyDeviceToHost))
 {
-	//CUctx_st *context = GPGPUSim_Context();
-	assert(kind == cudaMemcpyDeviceToHost);
-	printf("GPGPU-Sim PTX: cudaMemcpyFromSymbol: symbol = %p\n", symbol);
-	g_stream_manager->push( stream_operation(symbol,dst,count,offset,0) );
-	//gpgpu_ptx_sim_memcpy_symbol(symbol,dst,count,offset,0,context->get_device()->get_gpgpu());
-	return g_last_cudaError = cudaSuccess;
+	return cudaMemcpyFromSymbolAsync(dst, symbol, count, offset, kind, 0);
 }
 
 
