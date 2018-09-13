@@ -196,6 +196,8 @@ public:
    kernel_info_t( dim3 gridDim, dim3 blockDim, class function_info *entry );
    ~kernel_info_t();
 
+   static char *kernel_stat_filename;
+
    void inc_running() { m_num_cores_running++; }
    void dec_running()
    {
@@ -285,6 +287,8 @@ public:
    void destroy_cta_streams();
    void print_parent_info();
    kernel_info_t * get_parent() { return m_parent_kernel; }
+
+   void output_stat();
 
 private:
    kernel_info_t * m_parent_kernel;

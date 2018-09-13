@@ -454,6 +454,9 @@ void gpgpu_sim_config::reg_options(option_parser_t opp)
                           "-1");
    ptx_file_line_stats_options(opp);
 
+   option_parser_register(opp, "-gpgpu_kernel_stat", OPT_CSTR, 
+                          &kernel_info_t::kernel_stat_filename, "File name for kernel statistics. Default: no statistics", NULL);
+
     //Jin: kernel launch latency
     extern unsigned g_kernel_launch_latency;
     option_parser_register(opp, "-gpgpu_kernel_launch_latency", OPT_INT32, 

@@ -556,6 +556,8 @@ unsigned g_kernel_launch_latency;
 
 unsigned kernel_info_t::m_next_uid = 1;
 
+char *kernel_info_t::kernel_stat_filename = NULL;
+
 kernel_info_t::kernel_info_t( dim3 gridDim, dim3 blockDim, class function_info *entry )
 {
     m_kernel_entry=entry;
@@ -674,6 +676,23 @@ void kernel_info_t::print_parent_info() {
             m_parent_ctaid.x, m_parent_ctaid.y, m_parent_ctaid.z,
             m_parent_tid.x, m_parent_tid.y, m_parent_tid.z);
     }
+}
+
+#include <iomanip>
+
+void kernel_info_t::output_stat() {
+    if (kernel_stat_filename == NULL)
+        return;
+
+    std::ofstream kernel_stat(kernel_stat_filename, std::ofstream::out | std::ofstream::app);
+
+    unsigned long long duration = end_cycle - start_cycle;
+    kernel_stat<< std::setw(8) << get_uid() << std::setw(1) << ",";
+    kernel_stat<< std::setw(8) << duration << std::setw(1) << ",";
+    kernel_stat<< std::setw(8) << start_cycle << std::setw(1) << "," << std::setw(8) << end_cycle;
+    kernel_stat<< std::setw(1) << "," << name() << std::endl;
+
+    kernel_stat.close();
 }
 
 void kernel_info_t::destroy_cta_streams() {
