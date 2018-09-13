@@ -145,6 +145,8 @@
 #include <mach-o/dyld.h>
 #endif
 
+static pthread_mutex_t	mutex_api;
+
 extern void synchronize();
 extern void exit_simulation();
 
@@ -327,6 +329,9 @@ private:
 class _cuda_device_id *GPGPUSim_Init()
 {
 	static _cuda_device_id *the_device = NULL;
+
+	pthread_mutex_lock(&mutex_api);
+
 	if( !the_device ) {
 		gpgpu_sim *the_gpu = gpgpu_ptx_sim_init_perf();
 
@@ -356,6 +361,8 @@ class _cuda_device_id *GPGPUSim_Init()
 		the_device = new _cuda_device_id(the_gpu);
 	}
 	start_sim_thread(1);
+
+	pthread_mutex_unlock(&mutex_api);
 	return the_device;
 }
 
@@ -1785,8 +1792,16 @@ void cuobjdumpParseBinary(unsigned int handle){
 	//TODO: Remove temporarily files as per configurations
 }
 
+static void
+init_cuda_runtime_api(void)
+{
+	pthread_mutex_init(&mutex_api, NULL);
+}
+
 void** CUDARTAPI __cudaRegisterFatBinary( void *fatCubin )
 {
+	init_cuda_runtime_api();
+
 #if (CUDART_VERSION < 2010)
 	printf("GPGPU-Sim PTX: ERROR ** this version of GPGPU-Sim requires CUDA 2.1 or higher\n");
 	exit(1);
