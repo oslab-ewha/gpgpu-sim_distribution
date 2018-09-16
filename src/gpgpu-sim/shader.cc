@@ -304,6 +304,12 @@ shader_core_ctx::shader_core_ctx( class gpgpu_sim *gpu,
     m_occupied_ctas = 0;
     m_occupied_hwtid.reset();
     m_occupied_cta_to_hwtid.clear();
+
+    m_sum_occupied_n_threads = 0;
+    m_sum_occupied_shmem = 0;
+    m_sum_occupied_regs = 0;
+    m_sum_occupied_ctas = 0;
+    n_sampled_occupancy = 0;
 }
 
 void shader_core_ctx::reinit(unsigned start_thread, unsigned end_thread, bool reset_not_completed ) 
@@ -2026,6 +2032,21 @@ void gpgpu_sim::shader_print_runtime_stat( FILE *fout )
 }
 
 
+void gpgpu_sim::shader_output_stat()
+{
+    if (m_config.shader_stat_filename == NULL)
+        return;
+
+    std::ofstream shader_stat(m_config.shader_stat_filename, std::ofstream::out);
+
+    shader_stat << "# idx_cluster idx_core n_threads shmem regs ctas\n";
+    for ( unsigned i = 0; i < m_shader_config->n_simt_clusters; i++ ) {
+        m_cluster[i]->shaders_output_stat(i, shader_stat);
+    }
+    shader_stat.close();
+}
+
+
 void gpgpu_sim::shader_print_scheduler_stat( FILE* fout, bool print_dynamic_info ) const
 {
     // Print out the stats from the sampling shader core
@@ -3325,11 +3346,27 @@ unsigned simt_core_cluster::issue_block2core()
             m_core[core]->can_issue_1block(*kernel)) {
             m_core[core]->issue_block2core(*kernel);
             num_blocks_issued++;
-            m_cta_issue_next_core=core; 
+            m_cta_issue_next_core=core;
             break;
         }
     }
     return num_blocks_issued;
+}
+
+void simt_core_cluster::sample_core_occupancy()
+{
+    for( unsigned i=0; i < m_config->n_simt_cores_per_cluster; i++ ) {
+        m_core[i]->sample_core_occupancy();
+    }
+}
+
+void simt_core_cluster::shaders_output_stat(int idx, std::ofstream &strm)
+{
+    for( unsigned i=0; i < m_config->n_simt_cores_per_cluster; i++ ) {
+        strm << idx << "," << i << ",";
+        m_core[i]->output_core_occupancy(strm);
+        strm << "\n";
+    }
 }
 
 void simt_core_cluster::cache_flush()

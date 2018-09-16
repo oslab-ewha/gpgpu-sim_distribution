@@ -1590,6 +1590,8 @@ public:
     void cycle();
     void reinit(unsigned start_thread, unsigned end_thread, bool reset_not_completed );
     void issue_block2core( class kernel_info_t &kernel );
+    void sample_core_occupancy();
+    void output_core_occupancy(std::ofstream &strm);
 
     void cache_flush();
     void accept_fetch_response( mem_fetch *mf );
@@ -1863,6 +1865,12 @@ private:
     std::bitset<MAX_THREAD_PER_SM> m_occupied_hwtid;
     std::map<unsigned int, unsigned int> m_occupied_cta_to_hwtid; 
 
+    /* for occupancy stat */
+    unsigned long long m_sum_occupied_n_threads;
+    unsigned long long m_sum_occupied_shmem;
+    unsigned long long m_sum_occupied_regs;
+    unsigned long long m_sum_occupied_ctas;
+    unsigned int n_sampled_occupancy;
 
 };
 
@@ -1880,6 +1888,8 @@ public:
 
     void reinit();
     unsigned issue_block2core();
+    void sample_core_occupancy();
+    void shaders_output_stat(int idx, std::ofstream &strm);
     void cache_flush();
     bool icnt_injection_buffer_full(unsigned size, bool write);
     void icnt_inject_request_packet(class mem_fetch *mf);
