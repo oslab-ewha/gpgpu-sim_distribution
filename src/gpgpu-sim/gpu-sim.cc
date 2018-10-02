@@ -458,6 +458,8 @@ void gpgpu_sim_config::reg_options(option_parser_t opp)
                           &kernel_info_t::kernel_stat_filename, "File name for kernel statistics. Default: no statistics", NULL);
    option_parser_register(opp, "-gpgpu_shader_stat", OPT_CSTR, 
                           &shader_stat_filename, "File name for shader statistics. Default: no statistics", NULL);
+   option_parser_register(opp, "-gpgpu_tballoc_mode", OPT_INT32, 
+                          &tballoc_mode, "Thread block allocation mode. Default: 0(Breadth First Allocation)", "0");
 
     //Jin: kernel launch latency
     extern unsigned g_kernel_launch_latency;
@@ -1408,7 +1410,7 @@ int gpgpu_sim::next_clock_domain(void)
    return mask;
 }
 
-void gpgpu_sim::issue_block2core()
+void gpgpu_sim::alloc_tbs_bfa()
 {
     unsigned last_issued = m_last_cluster_issue; 
     for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
@@ -1418,6 +1420,34 @@ void gpgpu_sim::issue_block2core()
             m_last_cluster_issue=idx;
             m_total_cta_launched += num;
         }
+    }
+}
+
+void gpgpu_sim::alloc_tbs_dfa()
+{
+    unsigned last_issued = m_last_cluster_issue; 
+    for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
+        unsigned idx = (i + last_issued + 1) % m_shader_config->n_simt_clusters;
+	while (1) {
+            unsigned num = m_cluster[idx]->issue_block2core();
+            if( num ) {
+                m_last_cluster_issue=idx;
+                m_total_cta_launched += num;
+            }
+	    else {
+                break;
+	    }
+	}
+    }
+}
+
+void gpgpu_sim::issue_block2core()
+{
+    if (m_config.tballoc_mode == 1) {
+        alloc_tbs_dfa();
+    }
+    else {
+        alloc_tbs_bfa();
     }
 }
 
