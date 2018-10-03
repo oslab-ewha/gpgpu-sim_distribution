@@ -146,6 +146,8 @@
 #endif
 
 static pthread_mutex_t	mutex_api;
+static pthread_cond_t	cond_api;
+static int	is_launching;
 
 extern void synchronize();
 extern void exit_simulation();
@@ -961,6 +963,13 @@ __host__ const char* CUDARTAPI cudaGetErrorString(cudaError_t error)
 
 __host__ cudaError_t CUDARTAPI cudaConfigureCall(dim3 gridDim, dim3 blockDim, size_t sharedMem, cudaStream_t stream)
 {
+	pthread_mutex_lock(&mutex_api);
+	while (is_launching) {
+		pthread_cond_wait(&cond_api, &mutex_api);
+	}
+	is_launching = 1;
+	pthread_mutex_unlock(&mutex_api);
+
 	struct CUstream_st *s = (struct CUstream_st *)stream;
 	g_cuda_launch_stack.push_back( kernel_config(gridDim,blockDim,sharedMem,s) );
 	return g_last_cudaError = cudaSuccess;
@@ -996,6 +1005,12 @@ __host__ cudaError_t CUDARTAPI cudaLaunch( const char *hostFun )
 	stream_operation op(grid,g_ptx_sim_mode,stream);
 	g_stream_manager->push(op);
 	g_cuda_launch_stack.pop_back();
+
+	pthread_mutex_lock(&mutex_api);
+	is_launching = 0;
+	pthread_cond_broadcast(&cond_api);
+	pthread_mutex_unlock(&mutex_api);
+
 	return g_last_cudaError = cudaSuccess;
 }
 
@@ -1796,6 +1811,7 @@ static void
 init_cuda_runtime_api(void)
 {
 	pthread_mutex_init(&mutex_api, NULL);
+	pthread_cond_init(&cond_api, NULL);
 }
 
 void** CUDARTAPI __cudaRegisterFatBinary( void *fatCubin )
