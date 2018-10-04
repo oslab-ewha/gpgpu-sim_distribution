@@ -458,6 +458,8 @@ void gpgpu_sim_config::reg_options(option_parser_t opp)
                           &kernel_info_t::kernel_stat_filename, "File name for kernel statistics. Default: no statistics", NULL);
    option_parser_register(opp, "-gpgpu_shader_stat", OPT_CSTR, 
                           &shader_stat_filename, "File name for shader statistics. Default: no statistics", NULL);
+   option_parser_register(opp, "-gpgpu_cache_stat", OPT_CSTR, 
+                          &cache_stat_filename, "File name for cache statistics. Default: no statistics", NULL);
    option_parser_register(opp, "-gpgpu_tballoc_mode", OPT_INT32, 
                           &tballoc_mode, "Thread block allocation mode. Default: 0(Breadth First Allocation)", "0");
 
@@ -1105,6 +1107,7 @@ void gpgpu_sim::gpu_print_stat()
    fflush(stdout);
 
    shader_output_stat();
+   cache_output_stat();
 
    clear_executed_kernel_info(); 
 }
@@ -1148,6 +1151,55 @@ void shader_core_ctx::mem_instruction_stats(const warp_inst_t &inst)
         abort();
     }
 }
+
+static void
+cache_output_stat_type(std::ofstream &ofs, const char *typestr, struct cache_sub_stats &css)
+{
+    double	hit_ratio = 0;
+
+    if (css.accesses > 0)
+	    hit_ratio = 1 - css.misses / (double)css.accesses;
+
+    ofs << typestr;
+    ofs << " " << css.accesses << " " << css.misses;
+    ofs << " " << hit_ratio;
+    ofs << " " << css.pending_hits << " " << css.res_fails << "\n";
+}
+
+void gpgpu_sim::cache_output_stat()
+{
+    if (m_config.cache_stat_filename == NULL)
+        return;
+
+    struct cache_sub_stats css, css_L1I, css_L1D, css_L1C, css_L1T, css_L2;
+
+    for ( unsigned i = 0; i < m_shader_config->n_simt_clusters; i++ ) {
+        m_cluster[i]->get_L1I_sub_stats(css);
+        css_L1I += css;
+        m_cluster[i]->get_L1D_sub_stats(css);
+        css_L1D += css;
+        m_cluster[i]->get_L1C_sub_stats(css);
+        css_L1C += css;
+        m_cluster[i]->get_L1T_sub_stats(css);
+        css_L1T += css;
+    }
+
+    for ( unsigned i = 0; i < m_memory_config->m_n_mem_sub_partition; i++ ) {
+        m_memory_sub_partition[i]->get_L2cache_sub_stats(css);
+	css_L2 += css;
+    }
+
+    std::ofstream cache_stat(m_config.cache_stat_filename, std::ofstream::out);
+
+    cache_stat << "# type n_access n_miss hit_ratio pending_hit resevation_failure\n";
+    cache_output_stat_type(cache_stat, "L1I", css_L1I);
+    cache_output_stat_type(cache_stat, "L1D", css_L1D);
+    cache_output_stat_type(cache_stat, "L1C", css_L1C);
+    cache_output_stat_type(cache_stat, "L1T", css_L1T);
+    cache_output_stat_type(cache_stat, "L2", css_L2);
+    cache_stat.close();
+}
+
 bool shader_core_ctx::can_issue_1block(kernel_info_t & kernel) {
 
    //Jin: concurrent kernels on one SM

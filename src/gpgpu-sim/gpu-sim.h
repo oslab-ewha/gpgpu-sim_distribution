@@ -356,6 +356,7 @@ private:
     int gpu_runtime_stat_flag;
 
     char *shader_stat_filename;
+    char *cache_stat_filename;
     int tballoc_mode;
 
     unsigned long long liveness_message_freq; 
@@ -440,6 +441,7 @@ private:
    void print_dram_stats(FILE *fout) const;
    void shader_print_runtime_stat( FILE *fout );
    void shader_output_stat();
+   void cache_output_stat();
    void shader_print_l1_miss_stat( FILE *fout ) const;
    void shader_print_cache_stats( FILE *fout ) const;
    void shader_print_scheduler_stat( FILE* fout, bool print_dynamic_info ) const;
