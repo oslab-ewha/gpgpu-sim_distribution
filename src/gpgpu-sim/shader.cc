@@ -2466,7 +2466,8 @@ void shader_core_ctx::display_pipeline(FILE *fout, int print_mem, int mask ) con
 
 }
 
-unsigned int shader_core_config::max_cta( const kernel_info_t &k ) const
+void
+shader_core_config::calc_max_cta(kernel_info_t &k) const
 {
    unsigned threads_per_cta  = k.threads_per_cta();
    const class function_info *kernel = k.entry();
@@ -2497,16 +2498,19 @@ unsigned int shader_core_config::max_cta( const kernel_info_t &k ) const
    result = gs_min2(result, result_regs);
    result = gs_min2(result, result_cta);
 
-   static const struct gpgpu_ptx_sim_info* last_kinfo = NULL;
-   if (last_kinfo != kernel_info) {   //Only print out stats if kernel_info struct changes
-      last_kinfo = kernel_info;
-      printf ("GPGPU-Sim uArch: CTA/core = %u, limited by:", result);
-      if (result == result_thread) printf (" threads");
-      if (result == result_shmem) printf (" shmem");
-      if (result == result_regs) printf (" regs");
-      if (result == result_cta) printf (" cta_limit");
-      printf ("\n");
-   }
+   printf ("GPGPU-Sim uArch: CTA/core = %u, limited by:", result);
+   if (result == result_thread) printf (" threads");
+   if (result == result_shmem) printf (" shmem");
+   if (result == result_regs) printf (" regs");
+   if (result == result_cta) printf (" cta_limit");
+   printf ("\n");
+
+   k.n_cta_max = result;
+}
+
+unsigned int shader_core_config::max_cta( const kernel_info_t &k ) const
+{
+   unsigned result = k.n_cta_max;
 
     //gpu_max_cta_per_shader is limited by number of CTAs if not enough to keep all cores busy    
     if( k.num_blocks() < result*num_shader() ) { 

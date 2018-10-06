@@ -303,6 +303,8 @@ public:
    unsigned long long start_cycle;
    unsigned long long end_cycle;
    unsigned m_launch_latency;
+
+   unsigned n_cta_max;
 };
 
 struct core_config {

@@ -576,6 +576,8 @@ kernel_info_t::kernel_info_t( dim3 gridDim, dim3 blockDim, class function_info *
    
     //Jin: launch latency management
     m_launch_latency = g_kernel_launch_latency;
+
+    n_cta_max = 0;
 }
 
 kernel_info_t::~kernel_info_t()
@@ -681,16 +683,33 @@ void kernel_info_t::print_parent_info() {
 #include <iomanip>
 
 void kernel_info_t::output_stat() {
+    static int    initialized = 0;
+
     if (kernel_stat_filename == NULL)
         return;
 
-    std::ofstream kernel_stat(kernel_stat_filename, std::ofstream::out | std::ofstream::app);
+    std::ios_base::openmode	mode;
+
+    mode = std::ofstream::out;
+    if (initialized) {
+        mode |= std::ofstream::app;
+    }
+
+    std::ofstream kernel_stat(kernel_stat_filename, mode);
+
+    if (!initialized) {
+         kernel_stat << "#uid duration start end lmem smem cmem regs max_cta tbs threads name\n";
+	 initialized = 1;
+    }
 
     unsigned long long duration = end_cycle - start_cycle;
-    kernel_stat<< std::setw(8) << get_uid() << std::setw(1) << ",";
-    kernel_stat<< std::setw(8) << duration << std::setw(1) << ",";
-    kernel_stat<< std::setw(8) << start_cycle << std::setw(1) << "," << std::setw(8) << end_cycle;
-    kernel_stat<< std::setw(1) << "," << name() << std::endl;
+    kernel_stat<< get_uid() << "," << duration << "," << start_cycle << "," << end_cycle << ",";
+
+    const struct gpgpu_ptx_sim_info *kernel_info = ptx_sim_kernel_info(entry());
+    kernel_stat<< kernel_info->lmem << "," << kernel_info->smem << "," << kernel_info->cmem << ",";
+    kernel_stat<< kernel_info->regs << ",";
+    kernel_stat<< n_cta_max << "," << num_blocks() << "," << threads_per_cta() << ",";
+    kernel_stat<< name() << std::endl;
 
     kernel_stat.close();
 }

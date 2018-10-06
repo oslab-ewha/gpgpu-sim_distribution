@@ -184,6 +184,7 @@ struct cudaArray
 
 cudaError_t g_last_cudaError = cudaSuccess;
 
+extern gpgpu_sim *g_the_gpu;
 extern stream_manager *g_stream_manager;
 
 void register_ptx_function( const char *name, function_info *impl )
@@ -997,6 +998,7 @@ __host__ cudaError_t CUDARTAPI cudaLaunch( const char *hostFun )
 	printf("\nGPGPU-Sim PTX: cudaLaunch for 0x%p (mode=%s) on stream %u\n", hostFun,
 			g_ptx_sim_mode?"functional simulation":"performance simulation", stream?stream->get_uid():0 );
 	kernel_info_t *grid = gpgpu_cuda_ptx_sim_init_grid(hostFun,config.get_args(),config.grid_dim(),config.block_dim(),context);
+	g_the_gpu->getShaderCoreConfig()->calc_max_cta(*grid);
 	std::string kname = grid->name();
 	dim3 gridDim = config.grid_dim();
 	dim3 blockDim = config.block_dim();

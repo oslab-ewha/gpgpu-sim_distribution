@@ -1267,6 +1267,7 @@ struct shader_core_config : public core_config
         m_valid = true;
     }
     void reg_options(class OptionParser * opp );
+    void calc_max_cta(kernel_info_t &k) const;
     unsigned max_cta( const kernel_info_t &k ) const;
     unsigned num_shader() const { return n_simt_clusters*n_simt_cores_per_cluster; }
     unsigned sid_to_cluster( unsigned sid ) const { return sid / n_simt_cores_per_cluster; }
