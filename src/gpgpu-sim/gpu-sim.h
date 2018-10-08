@@ -355,6 +355,7 @@ private:
     int gpu_stat_sample_freq;
     int gpu_runtime_stat_flag;
 
+    char *gpusim_summary_filename;
     char *shader_stat_filename;
     char *cache_stat_filename;
     int tballoc_mode;
@@ -387,6 +388,7 @@ public:
    void print_stats();
    void update_stats();
    void deadlock_check();
+   void output_result();
 
    void get_pdom_stack_top_info( unsigned sid, unsigned tid, unsigned *pc, unsigned *rpc );
 
@@ -440,6 +442,7 @@ private:
    void sample_core_occupancy();
    void print_dram_stats(FILE *fout) const;
    void shader_print_runtime_stat( FILE *fout );
+   void gpusim_output_summary();
    void shader_output_stat();
    void cache_output_stat();
    void shader_print_l1_miss_stat( FILE *fout ) const;

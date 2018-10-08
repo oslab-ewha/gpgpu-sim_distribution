@@ -476,6 +476,14 @@ void shader_core_stats::print( FILE* fout ) const
    m_incoming_traffic_stats->print(fout); 
 }
 
+void shader_core_stats::output_result( std::ofstream &summary ) const
+{
+    summary << "local mem(r/w)  : " << gpgpu_n_mem_read_local << "/" << gpgpu_n_mem_write_local << "\n";
+    summary << "global mem(r/w) : " << gpgpu_n_mem_read_global << "/" << gpgpu_n_mem_write_global << "\n";
+    summary << "constant mem    : " << gpgpu_n_mem_texture << "\n";
+    summary << "texture mem     : " << gpgpu_n_mem_const << "\n";
+}
+
 void shader_core_stats::event_warp_issued( unsigned s_id, unsigned warp_id, unsigned num_issued, unsigned dynamic_warp_id ) {
     assert( warp_id <= m_config->max_warps_per_shader );
     for ( unsigned i = 0; i < num_issued; ++i ) {

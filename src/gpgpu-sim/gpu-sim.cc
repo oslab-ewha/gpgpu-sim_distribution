@@ -454,6 +454,8 @@ void gpgpu_sim_config::reg_options(option_parser_t opp)
                           "-1");
    ptx_file_line_stats_options(opp);
 
+   option_parser_register(opp, "-gpgpu_gpusim_summary", OPT_CSTR,
+                          &gpusim_summary_filename, "File name for simulation summary. Default: no simulation summary", NULL);
    option_parser_register(opp, "-gpgpu_kernel_stat", OPT_CSTR, 
                           &kernel_info_t::kernel_stat_filename, "File name for kernel statistics. Default: no statistics", NULL);
    option_parser_register(opp, "-gpgpu_shader_stat", OPT_CSTR, 
@@ -968,6 +970,31 @@ void gpgpu_sim::change_cache_config(FuncCache cache_config)
 	}
 }
 
+void gpgpu_sim::gpusim_output_summary()
+{
+    if (m_config.gpusim_summary_filename == NULL)
+        return;
+
+    std::ofstream summary(m_config.gpusim_summary_filename, std::ofstream::out);
+
+    summary << "cycles          : " << gpu_tot_sim_cycle << "\n";
+    summary << "instructions    : " << gpu_tot_sim_insn << "\n";
+    summary << "ipc             : " << (float)gpu_tot_sim_insn / gpu_tot_sim_cycle << "\n";
+    summary << "issued cta's    : " << gpu_tot_issued_cta << "\n";
+    summary << "stall dram full : " << gpu_stall_dramfull << "\n";
+    summary << "stall icnt2sh   : " << gpu_stall_icnt2sh << "\n";
+
+    m_shader_stats->output_result(summary);
+
+    summary.close();
+}
+
+void gpgpu_sim::output_result()
+{
+   gpusim_output_summary();
+   shader_output_stat();
+   cache_output_stat();
+}
 
 void gpgpu_sim::clear_executed_kernel_info()
 {
@@ -1105,9 +1132,6 @@ void gpgpu_sim::gpu_print_stat()
 
    time_vector_print();
    fflush(stdout);
-
-   shader_output_stat();
-   cache_output_stat();
 
    clear_executed_kernel_info(); 
 }

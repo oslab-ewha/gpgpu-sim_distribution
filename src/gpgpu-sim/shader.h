@@ -1503,6 +1503,7 @@ public:
     void visualizer_print( gzFile visualizer_file );
 
     void print( FILE *fout ) const;
+    void output_result( std::ofstream &summary) const;
 
     const std::vector< std::vector<unsigned> >& get_dynamic_warp_issue() const
     {

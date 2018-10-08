@@ -172,6 +172,9 @@ void *gpgpu_sim_thread_concurrent(void*)
         g_sim_active = false;
         pthread_mutex_unlock(&g_sim_lock);
     } while( !g_sim_done );
+
+    g_the_gpu->output_result();
+
     printf("GPGPU-Sim: *** simulation thread exiting ***\n");
     fflush(stdout);
 
