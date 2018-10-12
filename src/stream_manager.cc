@@ -37,6 +37,7 @@ CUstream_st::CUstream_st()
     m_pending = false;
     m_uid = sm_next_stream_uid++;
     pthread_mutex_init(&m_lock,NULL);
+    pthread_cond_init(&m_cond, NULL);
 }
 
 bool CUstream_st::empty()
@@ -58,12 +59,11 @@ bool CUstream_st::busy()
 void CUstream_st::synchronize() 
 {
     // called by host thread
-    bool done=false;
-    do{
-        pthread_mutex_lock(&m_lock);
-        done = m_operations.empty();
-        pthread_mutex_unlock(&m_lock);
-    } while ( !done );
+    pthread_mutex_lock(&m_lock);
+    while (!m_operations.empty()) {
+	    pthread_cond_wait(&m_cond, &m_lock);
+    }
+    pthread_mutex_unlock(&m_lock);
 }
 
 void CUstream_st::push( const stream_operation &op )
@@ -80,6 +80,8 @@ void CUstream_st::record_next_done()
     pthread_mutex_lock(&m_lock);
     assert(m_pending);
     m_operations.pop_front();
+    if (m_operations.empty())
+        pthread_cond_broadcast(&m_cond);
     m_pending=false;
     pthread_mutex_unlock(&m_lock);
 }
@@ -101,7 +103,6 @@ void CUstream_st::cancel_front()
     assert(m_pending);
     m_pending = false;
     pthread_mutex_unlock(&m_lock);
-
 }
 
 void CUstream_st::print(FILE *fp)

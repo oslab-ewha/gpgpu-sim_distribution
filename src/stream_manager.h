@@ -231,6 +231,7 @@ private:
     bool m_pending; // front operation has started but not yet completed
 
     pthread_mutex_t m_lock; // ensure only one host or gpu manipulates stream operation at one time
+    pthread_cond_t m_cond;
 };
 
 class stream_manager {
