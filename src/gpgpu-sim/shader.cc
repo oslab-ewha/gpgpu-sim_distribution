@@ -2518,7 +2518,12 @@ shader_core_config::calc_max_cta(kernel_info_t &k) const
 
 unsigned int shader_core_config::max_cta( const kernel_info_t &k ) const
 {
-   unsigned result = k.n_cta_max;
+    unsigned result;
+
+    if (k.n_cta_max == 0)
+        calc_max_cta((kernel_info_t &)k);
+
+    result = k.n_cta_max;
 
     //gpu_max_cta_per_shader is limited by number of CTAs if not enough to keep all cores busy    
     if( k.num_blocks() < result*num_shader() ) { 
