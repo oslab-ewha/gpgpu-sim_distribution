@@ -359,6 +359,7 @@ private:
     char *shader_stat_filename;
     char *cache_stat_filename;
     int tballoc_mode;
+    int intra_start, intra_end;
 
     unsigned long long liveness_message_freq; 
 
@@ -431,6 +432,7 @@ public:
     */
     simt_core_cluster * getSIMTCluster();
 
+    void add_insn_count(int insn_count);
 
 private:
    // clocks
@@ -492,6 +494,8 @@ private:
    class power_stat_t *m_power_stats;
    class gpgpu_sim_wrapper *m_gpgpusim_wrapper;
    unsigned long long  last_gpu_sim_insn;
+
+   unsigned long long  intra_gpu_sim_insn;
 
    unsigned long long  last_liveness_message_time; 
 

@@ -85,6 +85,7 @@ bool g_interactive_debugger_enabled=false;
 unsigned long long  gpu_sim_cycle = 0;
 unsigned long long  gpu_tot_sim_cycle = 0;
 
+static unsigned long long  intra_gpu_sim_cycle = 0;
 
 // performance counter for stalls due to congestion.
 unsigned int gpu_stall_dramfull = 0; 
@@ -460,12 +461,16 @@ void gpgpu_sim_config::reg_options(option_parser_t opp)
                           &kernel_info_t::kernel_stat_filename, "File name for kernel statistics. Default: no statistics", NULL);
    option_parser_register(opp, "-gpgpu_shader_stat", OPT_CSTR, 
                           &shader_stat_filename, "File name for shader statistics. Default: no statistics", NULL);
-   option_parser_register(opp, "-gpgpu_cache_stat", OPT_CSTR, 
+   option_parser_register(opp, "-gpgpu_cache_stat", OPT_CSTR,
                           &cache_stat_filename, "File name for cache statistics. Default: no statistics", NULL);
-   option_parser_register(opp, "-gpgpu_tballoc_mode", OPT_INT32, 
+   option_parser_register(opp, "-gpgpu_tballoc_mode", OPT_INT32,
                           &tballoc_mode, "Thread block allocation mode. Default: 0(Breadth First Allocation)", "0");
+   option_parser_register(opp, "-gpgpu_intra_start", OPT_INT32,
+                          &intra_start, "Start cycle for intra statistics. Default: from beginning", "0");
+   option_parser_register(opp, "-gpgpu_intra_end", OPT_INT32,
+                          &intra_end, "End cycle for intra statistics. Default: to end", "0");
 
-    //Jin: kernel launch latency
+   //Jin: kernel launch latency
     extern unsigned g_kernel_launch_latency;
     option_parser_register(opp, "-gpgpu_kernel_launch_latency", OPT_INT32, 
                           &g_kernel_launch_latency, "Kernel launch latency in cycles. Default: 0",
@@ -642,6 +647,7 @@ gpgpu_sim::gpgpu_sim( const gpgpu_sim_config &config )
     m_total_cta_launched = 0;
     gpu_deadlock = false;
 
+    intra_gpu_sim_insn = 0;
 
     m_cluster = new simt_core_cluster*[m_shader_config->n_simt_clusters];
     for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) 
@@ -980,6 +986,9 @@ void gpgpu_sim::gpusim_output_summary()
     summary << "cycles          : " << gpu_tot_sim_cycle << "\n";
     summary << "instructions    : " << gpu_tot_sim_insn << "\n";
     summary << "ipc             : " << (float)gpu_tot_sim_insn / gpu_tot_sim_cycle << "\n";
+    if (m_config.intra_start < m_config.intra_end) {
+        summary << "intra ipc       : " << (float)intra_gpu_sim_insn / intra_gpu_sim_cycle << "\n";
+    }
     summary << "issued cta's    : " << gpu_tot_issued_cta << "\n";
     summary << "stall dram full : " << gpu_stall_dramfull << "\n";
     summary << "stall icnt2sh   : " << gpu_stall_icnt2sh << "\n";
@@ -1527,6 +1536,17 @@ void gpgpu_sim::issue_block2core()
     }
 }
 
+void gpgpu_sim::add_insn_count(int insn_count)
+{
+    gpu_sim_insn += insn_count;
+    if (m_config.intra_start < m_config.intra_end) {
+	  int cycle_cur = gpu_sim_cycle + gpu_tot_sim_cycle;
+          if (cycle_cur >= m_config.intra_start && cycle_cur <= m_config.intra_end) {
+              intra_gpu_sim_insn += insn_count;
+	  }
+      }
+}
+
 void gpgpu_sim::sample_core_occupancy()
 {
     for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
@@ -1632,6 +1652,12 @@ void gpgpu_sim::cycle()
           raise(SIGTRAP); // Debug breakpoint
       }
       gpu_sim_cycle++;
+      if (m_config.intra_start < m_config.intra_end) {
+	  int cycle_cur = gpu_sim_cycle + gpu_tot_sim_cycle;
+          if (cycle_cur >= m_config.intra_start && cycle_cur <= m_config.intra_end) {
+               intra_gpu_sim_cycle++;
+	  }
+      }
       if( g_interactive_debugger_enabled ) 
          gpgpu_debug();
 

@@ -1284,7 +1284,7 @@ void shader_core_ctx::warp_inst_complete(const warp_inst_t &inst)
 	  m_stats->m_num_sim_insn[m_sid] += inst.active_count();
 
   m_stats->m_num_sim_winsn[m_sid]++;
-  m_gpu->gpu_sim_insn += inst.active_count();
+  m_gpu->add_insn_count(inst.active_count());
   inst.completed(gpu_tot_sim_cycle + gpu_sim_cycle);
 }
 
