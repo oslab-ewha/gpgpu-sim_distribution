@@ -778,12 +778,16 @@ __host__ cudaError_t CUDARTAPI cudaMemcpy2DFromArrayAsync(void *dst, size_t dpit
  *                                                                              *
  *******************************************************************************/
 
+__host__ cudaError_t CUDARTAPI cudaMemsetAsync(void *mem, int c, size_t count, cudaStream_t stream)
+{
+	struct CUstream_st *s = (struct CUstream_st *)stream;
+	g_stream_manager->push(stream_operation((size_t)mem, c, count, s));
+	return g_last_cudaError = cudaSuccess;
+}
+
 __host__ cudaError_t CUDARTAPI cudaMemset(void *mem, int c, size_t count)
 {
-	CUctx_st *context = GPGPUSim_Context();
-	gpgpu_t *gpu = context->get_device()->get_gpgpu();
-	gpu->gpu_memset((size_t)mem, c, count);
-	return g_last_cudaError = cudaSuccess;
+	return cudaMemsetAsync(mem, c, count, 0);
 }
 
 __host__ cudaError_t CUDARTAPI cudaMemset2D(void *mem, size_t pitch, int c, size_t width, size_t height)

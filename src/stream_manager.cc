@@ -160,6 +160,12 @@ bool stream_operation::do_operation( gpgpu_sim *gpu )
         gpgpu_ptx_sim_memcpy_symbol(m_symbol,m_host_address_dst,m_cnt,m_offset,0,gpu);
         m_stream->record_next_done();
         break;
+    case stream_memset:
+        if(g_debug_execution >= 3)
+            printf("memset\n");
+        gpu->gpu_memset((size_t)m_device_address_dst, m_val, m_cnt);
+        m_stream->record_next_done();
+        break;
     case stream_kernel_launch:
         if( m_sim_mode ) { //Functional Sim
             if(g_debug_execution >= 3) {

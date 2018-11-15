@@ -50,6 +50,7 @@ enum stream_operation_type {
     stream_memcpy_device_to_device,
     stream_memcpy_to_symbol,
     stream_memcpy_from_symbol,
+    stream_memset,
     stream_kernel_launch,
     stream_event
 };
@@ -140,6 +141,20 @@ public:
         m_sim_mode=false;
         m_done=false;
     }
+    stream_operation( size_t device_address_dst, int c, size_t cnt, struct CUstream_st *stream )
+    {
+        m_kernel=NULL;
+        m_type=stream_memset;
+        m_device_address_src=0;
+        m_device_address_dst=device_address_dst;
+        m_host_address_src=NULL;
+        m_host_address_dst=NULL;
+	m_val = c;
+        m_cnt=cnt;
+        m_stream=stream;
+        m_sim_mode=false;
+        m_done=false;
+    }
 
     bool is_kernel() const { return m_type == stream_kernel_launch; }
     bool is_mem() const {
@@ -165,6 +180,7 @@ private:
     size_t      m_device_address_src;
     void       *m_host_address_dst;
     const void *m_host_address_src;
+    int		m_val;
     size_t      m_cnt;
 
     const char *m_symbol;
