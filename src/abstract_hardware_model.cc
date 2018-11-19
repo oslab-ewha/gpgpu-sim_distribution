@@ -578,6 +578,9 @@ kernel_info_t::kernel_info_t( dim3 gridDim, dim3 blockDim, class function_info *
     m_launch_latency = g_kernel_launch_latency;
 
     n_cta_max = 0;
+
+    const struct gpgpu_ptx_sim_info *kernel_info = m_kernel_entry->get_kernel_info();
+    shmem_size = kernel_info->smem;
 }
 
 kernel_info_t::~kernel_info_t()
@@ -706,7 +709,7 @@ void kernel_info_t::output_stat() {
     kernel_stat<< get_uid() << "," << duration << "," << start_cycle << "," << end_cycle << ",";
 
     const struct gpgpu_ptx_sim_info *kernel_info = ptx_sim_kernel_info(entry());
-    kernel_stat<< kernel_info->lmem << "," << kernel_info->smem << "," << kernel_info->cmem << ",";
+    kernel_stat<< kernel_info->lmem << "," << shmem_size << "," << kernel_info->cmem << ",";
     kernel_stat<< kernel_info->regs << ",";
     kernel_stat<< n_cta_max << "," << num_blocks() << "," << threads_per_cta() << ",";
     kernel_stat<< name() << std::endl;

@@ -320,6 +320,7 @@ public:
 	dim3 block_dim() const { return m_BlockDim; }
 	gpgpu_ptx_sim_arg_list_t get_args() { return m_args; }
 	struct CUstream_st *get_stream() { return m_stream; }
+	size_t get_shmemSize() { return m_sharedMem; }
 
 private:
 	dim3 m_GridDim;
@@ -1007,6 +1008,8 @@ __host__ cudaError_t CUDARTAPI cudaLaunch( const char *hostFun )
 	dim3 blockDim = config.block_dim();
 	printf("GPGPU-Sim PTX: pushing kernel \'%s\' to stream %u, gridDim= (%u,%u,%u) blockDim = (%u,%u,%u) \n",
 			kname.c_str(), stream?stream->get_uid():0, gridDim.x,gridDim.y,gridDim.z,blockDim.x,blockDim.y,blockDim.z );
+	if (config.get_shmemSize() > grid->shmem_size)
+		grid->shmem_size = config.get_shmemSize();
 	stream_operation op(grid,g_ptx_sim_mode,stream);
 	g_stream_manager->push(op);
 	g_cuda_launch_stack.pop_back();

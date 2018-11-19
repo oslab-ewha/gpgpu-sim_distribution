@@ -305,6 +305,7 @@ public:
    unsigned m_launch_latency;
 
    unsigned n_cta_max;
+   unsigned shmem_size;
 };
 
 struct core_config {

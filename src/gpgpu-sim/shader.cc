@@ -2490,8 +2490,8 @@ shader_core_config::calc_max_cta(kernel_info_t &k) const
 
    //Limit by shmem/shader
    unsigned int result_shmem = (unsigned)-1;
-   if (kernel_info->smem > 0)
-      result_shmem = gpgpu_shmem_size / kernel_info->smem;
+   if (k.shmem_size > 0)
+      result_shmem = gpgpu_shmem_size / k.shmem_size;
 
    //Limit by register count, rounded up to multiple of 4.
    unsigned int result_regs = (unsigned)-1;
